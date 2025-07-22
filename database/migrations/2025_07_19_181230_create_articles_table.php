@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('slug')->unique()->nullable();
             $table->text('content');
             $table->text('summary')->nullable();
-            $table->enum('status', ['Draft', 'Published', 'Archieved']);
-            $table->date('published_date')->nullable();
-            $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('status', ['Draft', 'Published', 'Archived'])->index();
+            $table->date('published_date')->nullable()->index();
+            $table->foreignId('author_id')->constrained('users')->cascadeOnDelete()->index();
             $table->softDeletes();
             $table->timestamps();
         });

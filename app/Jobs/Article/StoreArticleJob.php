@@ -29,19 +29,36 @@ class StoreArticleJob implements ShouldQueue
      */
     public function handle(GeminiService $gemini): void
     {
-        $article = Article::create([
-            'title' => $this->data['title'],
-            'summary' => $gemini->generateSummary($this->data['content']),
-            'content' => $this->data['content'],
-            'status' => $this->data['status'],
-            'published_date' => $this->data['published_date'],
-            'author_id' => $this->data['author_id']
-        ]);
+        $baseSlug = $gemini->generateSlug($this->data['title'], $this->data['content']);
+        $slug = $baseSlug;
+        $count = 1;
 
-        $gemini->generateSlug($article, $this->data['title'], $this->data['content']);
+        while (true) {
+            try {
+                $article = Article::create([
+                    'title' => $this->data['title'],
+                    'slug' => $slug,
+                    'summary' => $gemini->generateSummary($this->data['content']),
+                    'content' => $this->data['content'],
+                    'status' => $this->data['status'],
+                    'published_date' => $this->data['published_date'],
+                    'author_id' => $this->data['author_id']
+                ]);
 
-        if (isset($this->data['category_id']) && is_array($this->data['category_id'])) {
-            $article->categories()->attach($this->data['category_id']);
+                if (!empty($this->data['category_id']) && is_array($this->data['category_id'])) {
+                    $article->categories()->sync($this->data['category_id']);
+                }
+
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                // duplicate slug
+                if ($e->getCode() == 23000) {
+                    $slug = $baseSlug . '-' . $count++;
+                    
+                } else {
+                    throw $e;
+                }
+            }
         }
     }
 }

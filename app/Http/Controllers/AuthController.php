@@ -8,14 +8,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class LoginController extends Controller
+class AuthController extends Controller
 {
-    public function index(LoginRequest $request)
+    public function login(LoginRequest $request)
     {
         $email = $request->email;
         $password = $request->password;
 
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $email)->with('role')->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
@@ -23,19 +23,17 @@ class LoginController extends Controller
 
         $token = $user->createToken('api_token')->plainTextToken;
 
-        $role = $user->role()->get();
-
         return response()->json([
             'message' => 'Login Successfull',
             'user' => $user,
-            'role' => $role,
             'token' => $token
         ]);
     }
 
     public function getAuthenticatedUser(Request $request)
     {
-        return response()->json(['user' => $request->user()]);
+        $user = $request->user()->load('role');
+        return response()->json(['user' => $user]);
     }
 
     public function logout(Request $request)

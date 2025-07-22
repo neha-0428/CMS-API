@@ -22,14 +22,15 @@ class StoreCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string'
+            'name' => 'required|string|unique:categories,name'
         ];
     }
 
     public function messages()
     {
         return [
-            'name.required' => 'The category name field is required'
+            'name.required' => 'The category name field is required',
+            'name.unique' => 'The category name is already been taken'
         ];
     }
 }

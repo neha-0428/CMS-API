@@ -6,7 +6,7 @@ use App\Models\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Category\StoreCategoryRequest;
 use App\Http\Requests\Category\UpdateCategoryRequest;
-use App\Http\Resources\Category\CategoryResource;
+use App\Http\Resources\CategoryResource;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -18,7 +18,7 @@ class CategoryController extends Controller
     {
         $categories = Category::all();
 
-        return response()->json(['data' => $categories]);
+        return CategoryResource::collection($categories);
     }
 
     /**
@@ -36,7 +36,7 @@ class CategoryController extends Controller
     {
         Category::create(['name' => $request->name]);
 
-        return response()->json(['message' => 'Category created successfully']);
+        return response()->json(['message' => 'Category created successfully'], 201);
     }
 
     /**
@@ -46,7 +46,11 @@ class CategoryController extends Controller
     {
         $category = Category::where('id', $id)->first();
 
-        return response()->json(['data' => new CategoryResource($category)]);
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
+
+        return new CategoryResource($category);
     }
 
     /**
@@ -81,6 +85,10 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::where('id', $id)->first();
+
+        if (!$category) {
+            return response()->json(['message' => 'Category not found'], 404);
+        }
 
         $category->delete();
 

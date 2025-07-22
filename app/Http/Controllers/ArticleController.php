@@ -2,26 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\ArticleFilter;
 use App\Models\Article;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Article\StoreArticleRequest;
 use App\Http\Requests\Article\UpdateArticleRequest;
+use App\Http\Resources\ArticleResource;
 use App\Jobs\Article\StoreArticleJob;
 use App\Jobs\Article\UpdateArticleJob;
-use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ArticleController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(ArticleFilter $filter)
     {
-        $articles = Article::all();
+        $query = Article::with(['categories', 'author']);
 
-        return response()->json(['data' => $articles]);
+        $query = $filter->apply($query);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if ($user && $user->isAuthor()) {
+            $query->where('author_id', Auth::id());
+        }
+
+        $articles = $query->orderBy('published_date', 'desc')->paginate(10);
+
+        return ArticleResource::collection($articles);
     }
 
     /**
@@ -37,8 +52,12 @@ class ArticleController extends Controller
      */
     public function store(StoreArticleRequest $request)
     {
+        $this->authorize('create', Article::class);
+
         try {
+
             $data = $request->validated();
+            $data['author_id'] = Auth::id();
 
             StoreArticleJob::dispatch($data);
 
@@ -54,12 +73,15 @@ class ArticleController extends Controller
      */
     public function show($id)
     {
-        $article = Article::where('id', $id)->first();
+        $article = Article::where('id', $id)->with('categories', 'author')->first();
+
         if (!$article) {
-            return response()->json(['message' => 'Article not found']);
+            return response()->json(['message' => 'Article not found'], 404);
         }
 
-        return response()->json(['data' => $article]);
+        $this->authorize('view', $article);
+
+        return new ArticleResource($article);
     }
 
     /**
@@ -78,10 +100,13 @@ class ArticleController extends Controller
         $article = Article::where('id', $id)->first();
 
         if (!$article) {
-            return response()->json(['message' => 'Article not found']);
+            return response()->json(['message' => 'Article not found'], 404);
         }
 
+        $this->authorize('update', $article);
+
         $data = $request->validated();
+        $data['author_id'] = Auth::id();
 
         UpdateArticleJob::dispatch($article, $data);
 
@@ -96,8 +121,10 @@ class ArticleController extends Controller
         $article = Article::where('id', $id)->first();
 
         if (!$article) {
-            return response()->json(['message' => 'Article not found']);
+            return response()->json(['message' => 'Article not found'], 404);
         }
+
+        $this->authorize('delete', $article);
 
         $article->delete();
 

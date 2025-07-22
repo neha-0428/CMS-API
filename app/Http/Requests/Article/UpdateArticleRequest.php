@@ -28,7 +28,6 @@ class UpdateArticleRequest extends FormRequest
             'category_id.*' => 'exists:categories,id',
             'status' => 'required|in:Draft,Published,Archived',
             'published_date' => 'required|date',
-            'author_id' => 'required|exists:users,id',
         ];
     }
 
@@ -53,9 +52,6 @@ class UpdateArticleRequest extends FormRequest
 
             'published_date.required' => 'The published date is required.',
             'published_date.date' => 'The published date must be a valid date.',
-
-            'author_id.required' => 'The author field is required.',
-            'author_id.exists' => 'The selected author does not exist.',
         ];
     }
 }
