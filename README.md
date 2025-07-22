@@ -52,24 +52,32 @@ cd cms-api
 ```
 
 ### 2. Install Dependency
-
+```bash
 composer install
+```
 
 ### 3. Setup Environment
 
+```bash
 cp .env.example .env
 php artisan key:generate
+```
 
 ### 4. Run Migrations and Seeders
 
+```bash
 php artisan migrate --seed
+```
 
 ### 5. Queue Worker (for Slug & Summary Jobs)
 
 <!-- Make sure QUEUE_CONNECTION=database is set in .env -->
-
+```bash
 php artisan queue:work
+```
 
 ### 6. Serve the application
 
+```bash
 php artisan serve
+```
